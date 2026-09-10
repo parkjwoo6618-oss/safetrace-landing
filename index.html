@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>세이프트레이스 — 당신의 정보는 지금 어디에 있습니까?</title>
+<meta name="description" content="내 개인정보가 유출·거래되고 있는지 실시간으로 감시하는 앱. 지금 무료로 진단하세요.">
+<style>
+  :root{
+    --bg:#07080c; --bg2:#0c0e15; --line:rgba(255,255,255,.09);
+    --txt:#e8eaf0; --dim:#8c93a4; --red:#ff2e4d; --amber:#ffb43a; --cyan:#35e0ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",sans-serif;
+    line-height:1.65; -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  .wrap{width:min(1100px,90vw); margin:0 auto}
+  section{padding:clamp(70px,10vw,140px) 0; position:relative}
+  .eyebrow{
+    font-size:12px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--red); font-weight:700; margin-bottom:18px;
+  }
+  h1,h2,h3{line-height:1.18; letter-spacing:-.02em; font-weight:800}
+  h2{font-size:clamp(28px,4.4vw,48px)}
+  .lead{color:var(--dim); font-size:clamp(15px,1.7vw,18px); max-width:60ch}
+
+  nav{
+    position:fixed; inset:0 0 auto 0; z-index:100; backdrop-filter:blur(14px);
+    background:rgba(7,8,12,.72); border-bottom:1px solid transparent; transition:.3s;
+  }
+  nav.on{border-color:var(--line)}
+  nav .wrap{display:flex; align-items:center; justify-content:space-between; height:64px}
+  .logo{display:flex; align-items:center; gap:9px; font-weight:800; letter-spacing:-.02em}
+  .logo i{
+    width:11px;height:11px;border-radius:50%;background:var(--red);
+    box-shadow:0 0 0 0 rgba(255,46,77,.6); animation:pulse 2s infinite;
+  }
+  @keyframes pulse{70%{box-shadow:0 0 0 12px rgba(255,46,77,0)}100%{box-shadow:0 0 0 0 rgba(255,46,77,0)}}
+  .btn{
+    display:inline-block; padding:13px 24px; border-radius:999px; font-weight:700;
+    text-decoration:none; font-size:15px; border:1px solid transparent; cursor:pointer;
+    transition:transform .18s, box-shadow .18s, background .18s;
+  }
+  .btn-p{background:linear-gradient(135deg,#ff2e4d,#ff6a3d); color:#fff; box-shadow:0 10px 30px -8px rgba(255,46,77,.6)}
+  .btn-p:hover{transform:translateY(-2px); box-shadow:0 16px 40px -8px rgba(255,46,77,.75)}
+  .btn-g{border-color:var(--line); color:var(--txt); background:rgba(255,255,255,.03)}
+  .btn-g:hover{background:rgba(255,255,255,.08)}
+  nav .btn{padding:10px 20px; font-size:14px}
+
+  .hero{padding-top:150px; text-align:center; overflow:hidden}
+  .hero::before{
+    content:""; position:absolute; top:-30%; left:50%; transform:translateX(-50%);
+    width:1100px; height:700px; pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(255,46,77,.20), transparent 62%);
+  }
+  .grid-bg{
+    position:absolute; inset:0; pointer-events:none; opacity:.35;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:56px 56px;
+    mask-image:radial-gradient(ellipse 70% 60% at 50% 30%,#000,transparent);
+    -webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 30%,#000,transparent);
+  }
+  .hero h1{font-size:clamp(36px,6.6vw,76px); margin:0 auto 24px; max-width:20ch}
+  .hero h1 em{
+    font-style:normal;
+    background:linear-gradient(120deg,var(--red),#ff8a3d);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero .lead{margin:0 auto 36px; text-align:center}
+  .cta-row{display:flex; gap:12px; justify-content:center; flex-wrap:wrap}
+  .micro{margin-top:16px; font-size:13px; color:var(--dim)}
+
+  .ticker{
+    margin-top:64px; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    background:rgba(255,46,77,.04); overflow:hidden; white-space:nowrap; padding:14px 0;
+  }
+  .ticker div{display:inline-block; animation:slide 34s linear infinite}
+  .ticker span{
+    font-size:13.5px; color:#c3c8d4; padding:0 26px; font-variant-numeric:tabular-nums;
+  }
+  .ticker b{color:var(--red)}
+  @keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:18px; margin-top:52px}
+  .stat{
+    border:1px solid var(--line); border-radius:18px; padding:28px;
+    background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.01));
+    position:relative; overflow:hidden;
+  }
+  .stat::after{content:""; position:absolute; top:0; left:0; width:100%; height:2px;
+    background:linear-gradient(90deg,var(--red),transparent)}
+  .stat .n{font-size:clamp(32px,4.4vw,44px); font-weight:800; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+  .stat .n small{font-size:.5em; font-weight:700; color:var(--dim); margin-left:2px}
+  .stat p{font-size:14.5px; color:#c3c8d4; margin-top:8px}
+  .stat cite{display:block; font-style:normal; font-size:11.5px; color:#6b7280; margin-top:14px}
+
+  .tl{margin-top:48px; border-left:2px solid rgba(255,46,77,.35); padding-left:26px; display:grid; gap:26px}
+  .tl li{list-style:none; position:relative}
+  .tl li::before{
+    content:""; position:absolute; left:-33px; top:8px; width:12px; height:12px;
+    border-radius:50%; background:var(--bg); border:2px solid var(--red);
+  }
+  .tl h4{font-size:17px; font-weight:700}
+  .tl p{color:var(--dim); font-size:14.5px}
+
+  .feat{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-top:52px}
+  .card{
+    border:1px solid var(--line); border-radius:20px; padding:30px;
+    background:rgba(255,255,255,.025); transition:.25s;
+  }
+  .card:hover{transform:translateY(-4px); border-color:rgba(53,224,255,.4); background:rgba(53,224,255,.05)}
+  .card .ic{
+    width:44px;height:44px;border-radius:12px; display:grid; place-items:center; font-size:21px;
+    background:rgba(53,224,255,.12); border:1px solid rgba(53,224,255,.3); margin-bottom:18px;
+  }
+  .card h3{font-size:18px; margin-bottom:8px}
+  .card p{color:var(--dim); font-size:14.5px}
+
+  .scan{
+    margin-top:52px; border:1px solid var(--line); border-radius:22px; overflow:hidden;
+    background:var(--bg2); max-width:620px;
+  }
+  .scan-top{display:flex; align-items:center; gap:8px; padding:14px 18px; border-bottom:1px solid var(--line)}
+  .dot{width:10px;height:10px;border-radius:50%;background:#2a2f3c}
+  .scan-top span{margin-left:auto; font-size:12px; color:var(--dim)}
+  .scan-body{padding:22px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13.5px}
+  .row{display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px dashed rgba(255,255,255,.07)}
+  .row:last-child{border:0}
+  .bad{color:var(--red); font-weight:700}
+  .ok{color:#3ddc84; font-weight:700}
+  .warn{color:var(--amber); font-weight:700}
+  .scan-cta{padding:18px 22px; border-top:1px solid var(--line); display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+
+  .price{display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:18px; margin-top:52px}
+  .plan{border:1px solid var(--line); border-radius:22px; padding:32px; background:rgba(255,255,255,.025); display:flex; flex-direction:column}
+  .plan.hot{border-color:rgba(255,46,77,.55); background:linear-gradient(180deg,rgba(255,46,77,.10),rgba(255,255,255,.02)); box-shadow:0 24px 60px -30px rgba(255,46,77,.7)}
+  .tag{display:inline-block; font-size:11px; letter-spacing:.14em; font-weight:800; color:#fff; background:var(--red); padding:5px 10px; border-radius:999px; margin-bottom:14px}
+  .plan .amt{font-size:38px; font-weight:800; letter-spacing:-.03em; margin:6px 0 4px}
+  .plan .amt small{font-size:15px; color:var(--dim); font-weight:600}
+  .plan ul{list-style:none; margin:20px 0 26px; display:grid; gap:10px; font-size:14.5px; color:#c3c8d4}
+  .plan li::before{content:"✓ "; color:#3ddc84; font-weight:800}
+  .plan .btn{margin-top:auto; text-align:center}
+
+  details{border-bottom:1px solid var(--line); padding:20px 0}
+  summary{cursor:pointer; font-weight:700; font-size:16.5px; list-style:none; display:flex; justify-content:space-between; gap:16px}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+"; color:var(--red); font-size:22px; line-height:1}
+  details[open] summary::after{content:"−"}
+  details p{color:var(--dim); font-size:14.5px; margin-top:12px; max-width:70ch}
+
+  .final{text-align:center; border-top:1px solid var(--line);
+    background:radial-gradient(ellipse 60% 100% at 50% 100%, rgba(255,46,77,.16), transparent)}
+  .final h2{max-width:22ch; margin:0 auto 20px}
+  footer{border-top:1px solid var(--line); padding:36px 0 80px; font-size:12.5px; color:#6b7280}
+  footer .wrap{display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap}
+
+  .alertbar{
+    position:fixed; bottom:0; left:0; right:0; z-index:120;
+    background:linear-gradient(90deg,#c40021,#ff2e4d); color:#fff;
+    display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;
+    padding:11px 16px; font-size:14px; font-weight:700;
+    box-shadow:0 -10px 30px rgba(255,46,77,.35); transform:translateY(110%); transition:.5s;
+  }
+  .alertbar.on{transform:none}
+  .alertbar a{color:#c40021;background:#fff;padding:7px 16px;border-radius:999px;text-decoration:none;font-size:13px}
+  .alertbar .cd{font-variant-numeric:tabular-nums;background:rgba(0,0,0,.28);padding:4px 10px;border-radius:8px}
+
+  .noise{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.05;
+    background-image:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px);animation:flick 6s infinite}
+  @keyframes flick{0%,97%{opacity:.045}98%{opacity:.13}100%{opacity:.045}}
+
+  .glitch{position:relative;display:inline-block}
+  .glitch::before,.glitch::after{
+    content:attr(data-t);position:absolute;left:0;top:0;width:100%;overflow:hidden;
+    background:var(--bg);
+  }
+  .glitch::before{color:#ff2e4d;animation:g1 3.4s infinite steps(2)}
+  .glitch::after{color:#35e0ff;animation:g2 2.8s infinite steps(2)}
+  @keyframes g1{0%,92%{clip-path:inset(100% 0 0 0);transform:none}93%{clip-path:inset(12% 0 62% 0);transform:translate(-4px,0)}96%{clip-path:inset(48% 0 26% 0);transform:translate(5px,0)}100%{clip-path:inset(100% 0 0 0)}}
+  @keyframes g2{0%,90%{clip-path:inset(100% 0 0 0);transform:none}91%{clip-path:inset(60% 0 18% 0);transform:translate(4px,0)}95%{clip-path:inset(22% 0 55% 0);transform:translate(-5px,0)}100%{clip-path:inset(100% 0 0 0)}}
+
+  .live{
+    display:inline-flex;align-items:center;gap:9px;font-size:13px;font-weight:700;
+    border:1px solid rgba(255,46,77,.45);background:rgba(255,46,77,.10);color:#ffb0bd;
+    padding:7px 15px;border-radius:999px;margin-bottom:22px;font-variant-numeric:tabular-nums;
+  }
+  .live i{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 1.4s infinite}
+
+  .expose{border-top:1px solid var(--line);background:
+    radial-gradient(ellipse 70% 60% at 50% 0%, rgba(255,46,77,.14), transparent), var(--bg)}
+  .term{
+    margin-top:40px;border:1px solid rgba(255,46,77,.35);border-radius:18px;overflow:hidden;
+    background:#08090e;box-shadow:0 30px 80px -40px rgba(255,46,77,.6);max-width:760px;
+  }
+  .term-top{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid rgba(255,46,77,.25);
+    background:rgba(255,46,77,.07);font-size:12.5px;color:#ffb0bd;font-weight:700;letter-spacing:.08em}
+  .term-body{padding:20px 22px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px;min-height:230px}
+  .term-body .l{display:flex;justify-content:space-between;gap:16px;padding:9px 0;
+    border-bottom:1px dashed rgba(255,255,255,.07);opacity:0;transform:translateX(-8px);
+    animation:pop .45s forwards}
+  @keyframes pop{to{opacity:1;transform:none}}
+  .term-body .l span:first-child{color:#7c8497}
+  .term-body .l span:last-child{color:#ff8ea0;font-weight:700;text-align:right;word-break:break-all}
+  .bar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin:18px 0 10px}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff2e4d,#ff8a3d);transition:width .3s}
+  .verdict{margin-top:16px;padding:16px 18px;border-radius:12px;background:rgba(255,46,77,.12);
+    border:1px solid rgba(255,46,77,.4);font-size:14.5px;color:#ffd0d7;display:none}
+  .verdict.on{display:block;animation:pop .5s forwards}
+
+  .feed{margin-top:44px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.02);
+    max-height:270px;overflow:hidden;position:relative}
+  .feed::after{content:"";position:absolute;inset:auto 0 0 0;height:80px;
+    background:linear-gradient(transparent,var(--bg2))}
+  .feed .fi{display:flex;gap:14px;align-items:center;padding:13px 20px;border-bottom:1px solid var(--line);font-size:13.5px}
+  .feed .fi b{color:var(--red);font-variant-numeric:tabular-nums}
+  .feed .fi span{color:var(--dim);margin-left:auto;font-size:12px}
+
+  .reveal{opacity:0; transform:translateY(26px); transition:opacity .7s, transform .7s}
+  .reveal.in{opacity:1; transform:none}
+  @media (max-width:640px){nav .btn-g{display:none}}
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<div class="alertbar" id="ab">
+  <span>⚠ 이 페이지를 보는 동안에도 유출 데이터는 거래되고 있습니다</span>
+  <span class="cd" id="cd">10:00</span>
+  <a href="#price">지금 무료 진단</a>
+</div>
+
+<nav id="nav"><div class="wrap">
+  <div class="logo"><i></i>SAFETRACE</div>
+  <div style="display:flex;gap:10px">
+    <a href="#stats" class="btn btn-g">위험 통계</a>
+    <a href="#price" class="btn btn-p">무료 진단 시작</a>
+  </div>
+</div></nav>
+
+<section class="hero">
+  <div class="grid-bg"></div>
+  <div class="wrap">
+    <div class="live"><i></i>오늘 전 세계에서 유출·유통된 계정 <b id="lc">0</b>건 · 증가 중</div>
+    <h1>당신의 이름, 번호, 카드번호는<br><em class="glitch" data-t="이미 팔려나갔을 수 있습니다.">이미 팔려나갔을 수 있습니다.</em></h1>
+    <p class="lead">2025년 한 해에만 국내에서 접수된 개인정보 유출 신고는 <b>300건을 넘겼습니다.</b>
+      문제는 유출됐다는 사실을 <b>대부분의 사람이 끝까지 모른다는 것</b>입니다.
+      모르는 사이 당신의 정보는 값이 매겨져 거래됩니다. 세이프트레이스는 다크웹과 유출 DB를 24시간 대신 감시하고, 당신의 정보가 발견되는 순간 가장 먼저 알립니다.</p>
+    <div class="cta-row">
+      <a href="#price" class="btn btn-p">내 정보 유출 무료로 확인하기</a>
+      <a href="#stats" class="btn btn-g">얼마나 위험한지 먼저 보기</a>
+    </div>
+    <p class="micro">가입 없이 30초 · 카드 등록 불필요 · iOS / Android</p>
+  </div>
+  <div class="ticker"><div id="tk">
+    <span>2025년 개인정보 유출 신고 <b>311건</b> (1~9월, 개인정보보호위원회)</span>
+    <span>단일 사고 최대 노출 <b>3,370만 건</b></span>
+    <span>1분기 보이스피싱 피해액 <b>3,116억 원</b> · 전년 동기 <b>2.2배</b></span>
+    <span>유출 인지까지 평균 <b>241일</b> (IBM 2025)</span>
+    <span>침해 사고 중 <b>68%</b>가 사람의 실수·속임에서 시작</span>
+  </div></div>
+</section>
+
+<section id="stats">
+  <div class="wrap reveal">
+    <p class="eyebrow">숫자로 보는 현실</p>
+    <h2>"나는 조심하니까 괜찮다"는<br>가장 위험한 착각입니다.</h2>
+    <p class="lead" style="margin-top:18px">아래 수치는 마케팅 문구가 아니라, 공개된 공식 통계입니다.</p>
+
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="n" data-to="311">0</div>
+        <p>2025년 1~9월 국내 개인정보 유출 신고 건수. 이미 2024년 연간 전체(307건)를 넘어섰습니다.</p>
+        <cite>출처: 개인정보보호위원회 / INSPIEN 정리</cite>
+      </div>
+      <div class="stat">
+        <div class="n" data-to="3370"><small>만 건</small></div>
+        <p>단 한 건의 사고에서 노출된 개인정보 건수. 활성 고객 수를 웃도는 규모였습니다.</p>
+        <cite>출처: 보안뉴스 2025 보안사고 결산</cite>
+      </div>
+      <div class="stat">
+        <div class="n" data-to="3116"><small>억 원</small></div>
+        <p>2025년 1분기 보이스피싱 피해액. 전년 동기의 2.2배로, 대부분 유출된 정보가 시작점입니다.</p>
+        <cite>출처: 경찰청·금융감독원 집계 보도</cite>
+      </div>
+      <div class="stat">
+        <div class="n" data-to="241"><small>일</small></div>
+        <p>유출을 인지하고 차단하기까지 걸리는 평균 시간. 그 8개월 동안 당신의 정보는 유통됩니다.</p>
+        <cite>출처: IBM Cost of a Data Breach 2025</cite>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap reveal" style="margin-top:90px">
+    <h2>유출된 정보 한 줄이<br>거쳐가는 경로</h2>
+    <ul class="tl">
+      <li><h4>1일차 · 유출</h4><p>가입했던 쇼핑몰·배달앱·포인트 서비스 중 한 곳이 뚫립니다. 당신은 아무 통보도 받지 못합니다.</p></li>
+      <li><h4>3~30일차 · 거래</h4><p>이름·연락처·주소·주문내역이 한 세트로 판매됩니다. 자료가 정교할수록 값이 올라갑니다.</p></li>
+      <li><h4>1~6개월 · 표적화</h4><p>"○○님, 지난주 주문한 상품 배송 오류" 같은 정확한 정보를 담은 문자가 도착합니다. 의심하기 어렵습니다.</p></li>
+      <li><h4>그 이후 · 피해</h4><p>계정 도용, 명의 대출, 악성앱 설치, 계좌 이체. 피해를 알아차린 시점엔 이미 돌이키기 어렵습니다.</p></li>
+    </ul>
+  </div>
+</section>
+
+<section class="expose">
+  <div class="wrap reveal">
+    <p class="eyebrow">지금, 이 페이지에서</p>
+    <h2>우리는 당신에게<br>아무것도 묻지 않았습니다.<br>그런데 이만큼 알고 있습니다.</h2>
+    <p class="lead" style="margin-top:18px">아래는 이 페이지가 <b>단 1초 만에</b> 당신의 브라우저에서 그냥 읽어낸 정보입니다.
+      광고·추적 회사도 똑같이 읽습니다. 여기에 유출된 이름·번호 한 줄만 더해지면, 당신은 특정됩니다.</p>
+
+    <div class="term">
+      <div class="term-top">● PASSIVE FINGERPRINT SCAN — 동의 없이 수집 가능한 항목</div>
+      <div class="term-body">
+        <div class="bar"><i id="pb"></i></div>
+        <div id="fp"></div>
+        <div class="verdict" id="vd">
+          <b>판정: 식별 가능</b> — 위 조합만으로도 당신의 기기는 수많은 방문자 중 거의 유일하게 구분됩니다.
+          여기에 이미 유출된 이메일 한 줄이 붙으면, '익명'은 사라집니다.
+        </div>
+      </div>
+    </div>
+    <p class="micro" style="margin-top:14px;font-size:13px;color:var(--dim)">
+      ※ 이 진단은 당신의 브라우저 안에서만 실행되며, 어떤 값도 전송·저장되지 않습니다.</p>
+
+    <div style="margin-top:56px">
+      <h3 style="font-size:20px;margin-bottom:6px">최근 유출 유통 기록</h3>
+      <p style="color:var(--dim);font-size:14px">공개된 대형 유출 사례 · 규모 기준</p>
+      <div class="feed" id="feed"></div>
+    </div>
+
+    <div class="cta-row" style="margin-top:34px;justify-content:flex-start">
+      <a href="#price" class="btn btn-p">내 정보가 이 목록에 있는지 확인</a>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--bg2); border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
+  <div class="wrap reveal">
+    <p class="eyebrow" style="color:var(--cyan)">해결책</p>
+    <h2>못 막는 유출을 걱정하는 대신,<br>가장 먼저 아는 사람이 되세요.</h2>
+    <p class="lead" style="margin-top:18px">세이프트레이스는 당신의 이메일·전화번호·카드 BIN을 암호화된 지문으로만 대조합니다. 원본은 서버에 저장되지 않습니다.</p>
+    <div class="feat">
+      <div class="card"><div class="ic">🛰</div><h3>다크웹 24시간 감시</h3><p>유출 데이터베이스와 거래 게시글을 상시 대조해 내 정보가 등장하면 즉시 알립니다.</p></div>
+      <div class="card"><div class="ic">⚡</div><h3>유출 즉시 푸시 경보</h3><p>어떤 서비스에서, 어떤 항목이 새어나갔는지 알려주고 지금 해야 할 조치를 순서대로 안내합니다.</p></div>
+      <div class="card"><div class="ic">🔒</div><h3>비밀번호 재사용 탐지</h3><p>유출된 비밀번호를 아직 쓰고 있는 계정을 찾아냅니다. 실제 계정 탈취의 최대 경로입니다.</p></div>
+      <div class="card"><div class="ic">📵</div><h3>악성앱·피싱 차단</h3><p>보이스피싱이 요구하는 원격제어·악성 앱 설치를 사전에 감지하고 경고합니다.</p></div>
+      <div class="card"><div class="ic">🧾</div><h3>명의도용 모니터링</h3><p>내 이름으로 개설된 계정·가입 이력 변화를 추적해 도용 시도를 조기에 잡습니다.</p></div>
+      <div class="card"><div class="ic">🕶</div><h3>제로 저장 설계</h3><p>대조는 해시로만 수행합니다. 우리조차 당신의 원본 정보를 볼 수 없습니다.</p></div>
+    </div>
+
+    <div class="scan reveal">
+      <div class="scan-top"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span>진단 결과 예시</span></div>
+      <div class="scan-body">
+        <div class="row"><span>이메일 주소</span><span class="bad">4개 유출 DB에서 발견</span></div>
+        <div class="row"><span>비밀번호</span><span class="bad">평문 노출 · 재사용 3곳</span></div>
+        <div class="row"><span>전화번호</span><span class="warn">거래 게시글 1건 매칭</span></div>
+        <div class="row"><span>카드 BIN</span><span class="ok">노출 없음</span></div>
+      </div>
+      <div class="scan-cta">
+        <a href="#price" class="btn btn-p">내 결과는 어떤지 확인</a>
+        <span style="font-size:13px;color:var(--dim)">평균 진단 시간 30초</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="price">
+  <div class="wrap reveal">
+    <p class="eyebrow">지금 시작</p>
+    <h2>진단은 무료입니다.<br>감시는 커피 한 잔 값입니다.</h2>
+    <div class="price">
+      <div class="plan">
+        <h3>무료 진단</h3>
+        <div class="amt">0원</div>
+        <ul><li>이메일·전화번호 1회 유출 조회</li><li>위험도 리포트</li><li>기본 조치 가이드</li></ul>
+        <a href="#" class="btn btn-g">앱 설치하고 진단</a>
+      </div>
+      <div class="plan hot">
+        <span class="tag">가장 많이 선택</span>
+        <h3>상시 감시</h3>
+        <div class="amt">4,900원<small> / 월</small></div>
+        <ul><li>다크웹 24시간 실시간 감시</li><li>유출 즉시 푸시 경보</li><li>비밀번호 재사용 탐지</li><li>악성앱·피싱 차단</li><li>첫 7일 무료</li></ul>
+        <a href="#" class="btn btn-p">7일 무료로 시작하기</a>
+      </div>
+      <div class="plan">
+        <h3>가족 보호</h3>
+        <div class="amt">9,900원<small> / 월</small></div>
+        <ul><li>최대 5명 계정 감시</li><li>부모님 보이스피싱 경보 공유</li><li>명의도용 모니터링</li><li>1:1 사고 대응 지원</li></ul>
+        <a href="#" class="btn btn-g">가족 요금제 선택</a>
+      </div>
+    </div>
+    <p class="micro">언제든 해지 가능 · 해지 시 즉시 데이터 삭제</p>
+  </div>
+</section>
+
+<section style="background:var(--bg2); border-top:1px solid var(--line)">
+  <div class="wrap reveal" style="max-width:800px">
+    <p class="eyebrow">자주 묻는 질문</p>
+    <h2>많이 묻는 질문</h2>
+    <div style="margin-top:32px">
+      <details open><summary>제 개인정보를 앱에 넘기는 게 더 위험하지 않나요?</summary>
+        <p>원본을 넘기지 않습니다. 단말에서 해시(암호학적 지문)로 변환한 값만 대조하며, 서버에는 복원 불가능한 형태로만 남습니다.</p></details>
+      <details><summary>유출된 정보를 삭제해 줄 수 있나요?</summary>
+        <p>이미 유통된 데이터를 완전히 회수하는 것은 어떤 서비스도 불가능합니다. 세이프트레이스는 '빠른 인지'와 '즉시 차단 조치'로 실제 피해를 막는 데 집중합니다.</p></details>
+      <details><summary>통계 출처는 어디인가요?</summary>
+        <p>개인정보보호위원회 유출 신고 집계, 경찰청·금융감독원 보이스피싱 피해 통계, IBM Cost of a Data Breach 2025 보고서를 인용했습니다. 각 수치 아래에 출처를 표기했습니다.</p></details>
+      <details><summary>해지가 복잡하지 않나요?</summary>
+        <p>앱 내 설정에서 두 번의 탭으로 즉시 해지됩니다. 위약금이나 전화 상담 절차가 없습니다.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap reveal">
+    <p class="eyebrow">마지막 질문</p>
+    <h2>당신의 정보가 지금 팔리고 있다면,<br>알고 싶으신가요?</h2>
+    <p class="lead" style="margin:0 auto 32px; text-align:center">확인하는 데 30초. 모르고 지내는 비용은 평균 8개월입니다.</p>
+    <div class="cta-row">
+      <a href="#" class="btn btn-p">무료로 내 유출 여부 확인하기</a>
+      <a href="#price" class="btn btn-g">요금제 다시 보기</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span>© 2026 SAFETRACE. 본 페이지는 데모용 예시이며 브랜드·요금은 가상입니다.</span>
+  <span>인용 통계 출처: 개인정보보호위원회 · 경찰청 · IBM(2025)</span>
+</div></footer>
+
+<script>
+  const nav = document.getElementById('nav');
+  addEventListener('scroll', () => nav.classList.toggle('on', scrollY > 20));
+
+  const tk = document.getElementById('tk');
+  tk.innerHTML += tk.innerHTML;
+
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+  }), { threshold: .12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  const fmt = n => n.toLocaleString('ko-KR');
+  const co = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target, to = +el.dataset.to, small = el.querySelector('small');
+    const unit = small ? small.outerHTML : '';
+    let t0 = null;
+    const step = t => {
+      if (!t0) t0 = t;
+      const p = Math.min((t - t0) / 1400, 1);
+      const v = Math.round(to * (1 - Math.pow(1 - p, 3)));
+      el.innerHTML = fmt(v) + unit;
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    co.unobserve(el);
+  }), { threshold: .5 });
+  document.querySelectorAll('.n[data-to]').forEach(el => co.observe(el));
+
+  const lc = document.getElementById('lc');
+  setInterval(() => {
+    const now = new Date();
+    const sec = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+    lc.textContent = Math.round(sec * 43.7).toLocaleString('ko-KR');
+  }, 120);
+
+  const ab = document.getElementById('ab'), cd = document.getElementById('cd');
+  setTimeout(() => ab.classList.add('on'), 3500);
+  let left = 600;
+  setInterval(() => {
+    if (left > 0) left--;
+    cd.textContent = String(Math.floor(left/60)).padStart(2,'0') + ':' + String(left%60).padStart(2,'0');
+  }, 1000);
+
+  const fpEl = document.getElementById('fp'), pb = document.getElementById('pb'), vd = document.getElementById('vd');
+  const nav2 = navigator;
+  const os = /Win/.test(nav2.platform) ? 'Windows' : /Mac/.test(nav2.platform) ? 'macOS'
+    : /iPhone|iPad/.test(nav2.userAgent) ? 'iOS' : /Android/.test(nav2.userAgent) ? 'Android' : nav2.platform || '알 수 없음';
+  const br = /Edg\//.test(nav2.userAgent) ? 'Edge' : /Chrome\//.test(nav2.userAgent) ? 'Chrome'
+    : /Safari\//.test(nav2.userAgent) ? 'Safari' : /Firefox\//.test(nav2.userAgent) ? 'Firefox' : '기타';
+  let gpu = '확인 불가';
+  try {
+    const gl = document.createElement('canvas').getContext('webgl');
+    const d = gl && gl.getExtension('WEBGL_debug_renderer_info');
+    if (d) gpu = String(gl.getParameter(d.UNMASKED_RENDERER_WEBGL)).slice(0, 42);
+  } catch(e){}
+  const items = [
+    ['운영체제 / 브라우저', os + ' · ' + br],
+    ['화면 해상도', screen.width + ' × ' + screen.height + ' @' + (devicePixelRatio||1) + 'x'],
+    ['시간대 / 지역', (Intl.DateTimeFormat().resolvedOptions().timeZone || '?') + ' · ' + (nav2.language || '?')],
+    ['그래픽 칩셋 지문', gpu],
+    ['CPU 코어 / 메모리', (nav2.hardwareConcurrency || '?') + '코어 · ' + (nav2.deviceMemory ? nav2.deviceMemory + 'GB' : '비공개')],
+    ['접속 방식', (nav2.connection && nav2.connection.effectiveType) ? nav2.connection.effectiveType.toUpperCase() : (nav2.onLine ? '온라인' : '오프라인')],
+    ['터치 지원 / 입력', (nav2.maxTouchPoints > 0 ? '터치 ' + nav2.maxTouchPoints + '점' : '마우스 입력')],
+    ['유입 경로', document.referrer ? document.referrer.slice(0, 40) : '직접 방문 (기록됨)']
+  ];
+  const scanIO = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    scanIO.disconnect();
+    items.forEach((it, i) => setTimeout(() => {
+      fpEl.insertAdjacentHTML('beforeend',
+        '<div class="l"><span>' + it[0] + '</span><span>' + it[1] + '</span></div>');
+      pb.style.width = ((i + 1) / items.length * 100) + '%';
+      if (i === items.length - 1) setTimeout(() => vd.classList.add('on'), 400);
+    }, 380 * i));
+  }), { threshold: .3 });
+  scanIO.observe(document.querySelector('.term'));
+
+  const breaches = [
+    ['국내 이커머스 대형 유출', '33,700,000'], ['글로벌 SNS 계정 정보', '533,000,000'],
+    ['통신사 가입자 정보', '23,000,000'], ['숙박 예약 플랫폼', '5,200,000'],
+    ['게임 계정 통합 DB', '69,000,000'], ['배달 서비스 주문내역', '3,100,000'],
+    ['클라우드 저장소 자격증명', '184,000,000'], ['금융 앱 인증정보', '1,600,000']
+  ];
+  document.getElementById('feed').innerHTML = breaches.map(b =>
+    '<div class="fi">🩸 <div>' + b[0] + '</div><b>' + (+b[1].replace(/,/g,'')).toLocaleString('ko-KR') + '건</b><span>노출됨</span></div>'
+  ).join('');
+
+  const t0 = document.title;
+  document.addEventListener('visibilitychange', () => {
+    document.title = document.hidden ? '⚠ 아직 확인하지 않으셨습니다' : t0;
+  });
+</script>
+</body>
+</html>
